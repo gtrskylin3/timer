@@ -47,6 +47,7 @@ class TimerApp(QWidget):
         
         self.total_seconds = 0
         self.is_paused = True
+        self.is_stopwatch_mode = False
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_time)
 
@@ -149,20 +150,21 @@ class TimerApp(QWidget):
 
     def toggle_play_pause(self):
         if self.is_paused:
-            if self.total_seconds > 0:
-                self.timer.start(1000)
-                self.play_pause_button.setText('=')
-                # self.play_pause_button.setStyleSheet(f"background-color: #d2691e; color: white; border: none; border-radius: 8px; QPushButton:hover {{ background-color: {QColor('#d2691e').lighter(115).name()}; }}")
-                self.is_paused = False
-        else:
+            if self.total_seconds == 0 and not self.is_stopwatch_mode:
+                self.is_stopwatch_mode = True
+
+            self.timer.start(1000)
+            self.play_pause_button.setText('=')
+            self.is_paused = False
+        else: # Pausing
             self.timer.stop()
             self.play_pause_button.setText('▶')
-            # self.play_pause_button.setStyleSheet(f"background-color: #007bff; color: white; border: none; border-radius: 8px; QPushButton:hover {{ background-color: {QColor('#007bff').lighter(115).name()}; }}")
             self.is_paused = True
 
     def stop_timer(self):
         self.timer.stop()
         self.total_seconds = 0
+        self.is_stopwatch_mode = False # Reset stopwatch mode
         self.update_display()
         if not self.is_paused:
             self.toggle_play_pause() # Reset button to play
@@ -173,6 +175,7 @@ class TimerApp(QWidget):
         if dialog.exec():
             hours, minutes, seconds = dialog.get_time()
             self.total_seconds = hours * 3600 + minutes * 60 + seconds
+            self.is_stopwatch_mode = False # Reset stopwatch mode when new time is set
             self.update_display()
             if not self.is_paused:
                 self.toggle_play_pause() # Stop timer and reset button if running
@@ -180,10 +183,13 @@ class TimerApp(QWidget):
 
 
     def update_time(self):
-        if self.total_seconds > 0:
+        if self.is_stopwatch_mode:
+            self.total_seconds += 1
+            self.update_display()
+        elif self.total_seconds > 0: # Countdown mode
             self.total_seconds -= 1
             self.update_display()
-        else:
+        else: # Countdown finished
             self.timer.stop()
             if not self.is_paused:
                 self.toggle_play_pause() # Reset button to play
