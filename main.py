@@ -4,6 +4,14 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QHBoxLayout, QVBoxLayout,
                              QPushButton, QLabel, QDialog, QSpinBox, QDialogButtonBox)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor
+from pathlib import Path
+from datetime import date
+import json
+
+BASE_DIR = Path(__file__).parent.resolve()
+DATA_DIR = BASE_DIR / 'data.json'
+
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent=None):
@@ -37,6 +45,184 @@ class SettingsDialog(QDialog):
 
     def get_time(self):
         return (self.hour_spinbox.value(), self.minute_spinbox.value(), self.second_spinbox.value())
+
+class StatisticsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('Статистика использования')
+        self.setMinimumWidth(400)
+        self.setMinimumHeight(300)
+        
+        layout = QVBoxLayout(self)
+        
+        # Заголовок
+        title = QLabel('📊 Статистика по дням')
+        title.setFont(QFont('Arial', 16, QFont.Weight.Bold))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
+        
+        # Таблица
+        self.table = QTableWidget()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(['Дата', 'Время (часы)'])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setFont(QFont('Arial', 11))
+        self.table.setAlternatingRowColors(True)
+        self.table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #cccccc;
+                border: 1px solid #dddddd;
+            }
+            QTableWidget::item {
+                padding: 8px;
+            }
+            QHeaderView::section {
+                background-color: #048ec0;
+                color: white;
+                padding: 8px;
+                border: none;
+                font-weight: bold;
+            }
+        """)
+        
+        layout.addWidget(self.table)
+        
+        # Итого
+        self.total_label = QLabel()
+        self.total_label.setFont(QFont('Arial', 12, QFont.Weight.Bold))
+        self.total_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.total_label.setStyleSheet("color: #048ec0; padding: 10px;")
+        layout.addWidget(self.total_label)
+        
+        # Кнопка закрытия
+        close_button = QPushButton('Закрыть')
+        close_button.setFixedHeight(35)
+        close_button.setStyleSheet("""
+            QPushButton {
+                background-color: #048ec0;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #037aa8;
+            }
+        """)
+        close_button.clicked.connect(self.accept)
+        layout.addWidget(close_button)
+        
+        # Загрузка данных
+        self.load_statistics()
+    
+    def load_statistics(self):
+        stats = {}
+        if DATA_DIR.exists():
+            with open(DATA_DIR, 'r', encoding='utf-8') as f:
+                try:
+                    stats = json.load(f)
+                except json.JSONDecodeError:
+                    stats = {}
+        
+        if not stats:
+            self.table.setRowCount(1)
+            self.table.setItem(0, 0, QTableWidgetItem('Нет данных'))
+            self.table.setItem(0, 1, QTableWidgetItem('—'))
+            self.total_label.setText('Всего: 0 часов')
+            return
+        
+        # Сортировка по датам
+        sorted_dates = sorted(stats.keys(), reverse=True)
+        
+        self.table.setRowCount(len(sorted_dates))
+        total_seconds = 0
+        
+        for row, date_str in enumerate(sorted_dates):
+            seconds = stats[date_str]
+            total_seconds += seconds
+            hours = seconds / 3600
+            
+            # Форматирование даты
+            try:
+                date_obj = date.fromisoformat(date_str)
+                formatted_date = date_obj.strftime('%d.%m.%Y (%A)')
+            except:
+                formatted_date = date_str
+            
+            # Добавление в таблицу
+            date_item = QTableWidgetItem(formatted_date)
+            date_item.setFlags(date_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            hours_item = QTableWidgetItem(f'{hours:.2f} ч ({seconds // 3600}ч {(seconds % 3600) // 60}м)')
+            hours_item.setFlags(hours_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            hours_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            
+            self.table.setItem(row, 0, date_item)
+            self.table.setItem(row, 1, hours_item)
+        
+        # Итого
+        total_hours = total_seconds / 3600
+        total_days = len(sorted_dates)
+        self.total_label.setText(f'Всего за {total_days} дн.: {total_hours:.2f} часов ({total_seconds // 3600}ч {(total_seconds % 3600) // 60}м)')
+
+
+class SettingsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('Set Time')
+        self.layout = QVBoxLayout(self)
+
+        time_layout = QHBoxLayout()
+        self.hour_spinbox = self.create_spinbox(0, 23)
+        self.minute_spinbox = self.create_spinbox(0, 59)
+        self.second_spinbox = self.create_spinbox(0, 59)
+        
+        time_layout.addWidget(self.hour_spinbox)
+        time_layout.addWidget(QLabel(':'))
+        time_layout.addWidget(self.minute_spinbox)
+        time_layout.addWidget(QLabel(':'))
+        time_layout.addWidget(self.second_spinbox)
+        
+        self.layout.addLayout(time_layout)
+
+        # Кнопка статистики
+        self.stats_button = QPushButton('📊 Посмотреть статистику')
+        self.stats_button.setFixedHeight(35)
+        self.stats_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 12px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
+        self.stats_button.clicked.connect(self.show_statistics)
+        self.layout.addWidget(self.stats_button)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        self.layout.addWidget(buttons)
+
+    def create_spinbox(self, min_val, max_val):
+        spinbox = QSpinBox()
+        spinbox.setRange(min_val, max_val)
+        spinbox.setFont(QFont('Arial', 16))
+        return spinbox
+
+    def get_time(self):
+        return (self.hour_spinbox.value(), self.minute_spinbox.value(), self.second_spinbox.value())
+    
+    def show_statistics(self):
+        stats_dialog = StatisticsDialog(self)
+        stats_dialog.exec()
+
 
 class TimerApp(QWidget):
     def __init__(self):
@@ -77,6 +263,43 @@ class TimerApp(QWidget):
         """)
         self.close_button.clicked.connect(self.close) # Connect to window close method
         top_bar_layout.addWidget(self.close_button)
+        # Top bar for close button
+        top_bar_layout = QHBoxLayout()
+        top_bar_layout.addStretch() # Push button to the right
+
+        # Minimize button
+        self.minimize_button = QPushButton('−') # Minus symbol for minimize
+        self.minimize_button.setFixedSize(12, 14)
+        self.minimize_button.setStyleSheet("""
+            QPushButton {
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: black;
+            }
+        """)
+        self.minimize_button.clicked.connect(self.showMinimized)
+        top_bar_layout.addWidget(self.minimize_button)
+
+        self.close_button = QPushButton('x') # Text for close button
+        self.close_button.setFixedSize(12, 14)
+        self.close_button.setStyleSheet("""
+            QPushButton {
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+        """)
+        self.close_button.clicked.connect(self.close) # Connect to window close method
+        top_bar_layout.addWidget(self.close_button)
+
 
         main_layout.addLayout(top_bar_layout) # Add top bar to main layout
         
@@ -105,8 +328,8 @@ class TimerApp(QWidget):
         button_layout.addStretch()
         button_layout.addWidget(self.play_pause_button)
         button_layout.addWidget(self.stop_button)
-        button_layout.addStretch()
         button_layout.addWidget(self.settings_button)
+        button_layout.addStretch()
 
         main_layout.addLayout(time_layout)
         main_layout.addLayout(button_layout)
@@ -132,18 +355,18 @@ class TimerApp(QWidget):
 
     def create_button(self, text, color):
         button = QPushButton(text)
-        button.setFixedSize(60, 60)
-        button.setFont(QFont('Arial', 24))
+        button.setFixedSize(30, 30)
+        button.setFont(QFont('Arial', 12))
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setStyleSheet(f"""
             QPushButton {{
-                background-color: {color};
+                background-color: black;
                 color: white;
                 border: none;
                 border-radius: 8px;
             }}
             QPushButton:hover {{
-                background-color: {QColor(color).lighter(115).name()};
+                background-color: {QColor('black').lighter(115).name()};
             }}
         """)
         return button
@@ -154,15 +377,38 @@ class TimerApp(QWidget):
                 self.is_stopwatch_mode = True
 
             self.timer.start(1000)
-            self.play_pause_button.setText('=')
+            self.play_pause_button.setText('II')
             self.is_paused = False
         else: # Pausing
             self.timer.stop()
             self.play_pause_button.setText('▶')
             self.is_paused = True
 
+    def save_stats(self, file_path=DATA_DIR):
+        if not self.total_seconds:
+            return
+
+        # 1. Читаем существующие данные
+        stats = {}
+        if file_path.exists():
+            with open(file_path, 'r', encoding='utf-8') as f:
+                try:
+                    stats = json.load(f)
+                except json.JSONDecodeError:
+                    stats = {}  # Файл пуст или повреждён
+
+        # 2. Обновляем статистику за сегодня
+        today = str(date.today())  # Формат: 'YYYY-MM-DD'
+        stats[today] = stats.get(today, 0) + self.total_seconds
+
+        # 3. Сохраняем обратно
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(stats, f, indent=2)
+
+
     def stop_timer(self):
         self.timer.stop()
+        self.save_stats()
         self.total_seconds = 0
         self.is_stopwatch_mode = False # Reset stopwatch mode
         self.update_display()
@@ -194,11 +440,15 @@ class TimerApp(QWidget):
             if not self.is_paused:
                 self.toggle_play_pause() # Reset button to play
             self.is_paused = True
-            
+
+    def get_format_time(self, total_seconds):
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return hours, minutes, seconds
+
     def update_display(self):
-        hours = self.total_seconds // 3600
-        minutes = (self.total_seconds % 3600) // 60
-        seconds = self.total_seconds % 60
+        hours, minutes, seconds = self.get_format_time(self.total_seconds)
         self.hour_label.setText(f"{hours:02}")
         self.minute_label.setText(f"{minutes:02}")
         self.second_label.setText(f"{seconds:02}")
