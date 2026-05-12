@@ -150,21 +150,16 @@ class TimerApp(QWidget):
 
     def toggle_play_pause(self):
         if self.is_paused:
-            if self.total_seconds == 0:  # Start stopwatch
+            if self.total_seconds == 0 and not self.is_stopwatch_mode:
                 self.is_stopwatch_mode = True
-                self.timer.start(1000)
-                self.play_pause_button.setText('=')
-                self.is_paused = False
-            elif self.total_seconds > 0: # Start countdown
-                self.is_stopwatch_mode = False # Ensure it's not stopwatch mode
-                self.timer.start(1000)
-                self.play_pause_button.setText('=')
-                self.is_paused = False
-        else:
+
+            self.timer.start(1000)
+            self.play_pause_button.setText('=')
+            self.is_paused = False
+        else: # Pausing
             self.timer.stop()
             self.play_pause_button.setText('▶')
             self.is_paused = True
-            self.is_stopwatch_mode = False # Stop and reset stopwatch mode
 
     def stop_timer(self):
         self.timer.stop()
