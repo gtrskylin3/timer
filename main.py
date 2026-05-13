@@ -42,12 +42,14 @@ class SettingsDialog(QDialog):
         top_bar_layout.addStretch()
         self.close_button = QPushButton("x")  # Text for close button
         self.close_button.setFixedSize(12, 14)
+        self.close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.close_button.setStyleSheet("""
             QPushButton {
                 background-color: black;
                 color: white;
                 border: none;
                 border-radius: 5px;
+                outline: none;
             }
             QPushButton:hover {
                 background-color: #c82333;
@@ -81,6 +83,7 @@ class SettingsDialog(QDialog):
         self.stats_button = QPushButton("📊 Посмотреть статистику")
         self.stats_button.setFixedHeight(35)
         self.stats_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.stats_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.stats_button.clicked.connect(self.show_statistics)
         self.layout.addWidget(self.stats_button)
 
@@ -114,6 +117,7 @@ class SettingsDialog(QDialog):
                 border-radius: 5px;
                 padding: 5px;
                 font-size: 16px;
+                outline: none;
             }
             QPushButton {
                 background-color: #3c3c3c;
@@ -121,6 +125,7 @@ class SettingsDialog(QDialog):
                 border: none;
                 border-radius: 5px;
                 font-size: 12px;
+                outline: none;
             }
             QPushButton:hover {
                 background-color: #4a4a4a;
@@ -130,6 +135,7 @@ class SettingsDialog(QDialog):
         self.stats_button.setStyleSheet("""
             QPushButton {
                 background-color: #28a745;
+                outline: none;
             }
             QPushButton:hover {
                 background-color: #218838;
@@ -138,6 +144,7 @@ class SettingsDialog(QDialog):
 
         for button in buttons.buttons():
             button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         self.old_pos = None
 
@@ -145,6 +152,7 @@ class SettingsDialog(QDialog):
         spinbox = QSpinBox()
         spinbox.setRange(min_val, max_val)
         spinbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        spinbox.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         return spinbox
 
     def get_time(self):
@@ -193,6 +201,7 @@ class StatisticsDialog(QDialog):
         top_bar_layout.addStretch()
         self.close_button = QPushButton("x")
         self.close_button.setFixedSize(12, 14)
+        self.close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.close_button.clicked.connect(self.accept)
         top_bar_layout.addWidget(self.close_button)
         layout.addLayout(top_bar_layout)
@@ -260,6 +269,9 @@ class StatisticsDialog(QDialog):
                 padding: 8px;
                 border: none;
                 font-weight: bold;
+            }
+            QPushButton {
+                outline: none;
             }
         """)
 
@@ -368,12 +380,14 @@ class TimerApp(QWidget):
         # Minimize button
         self.minimize_button = QPushButton("−")  # Minus symbol for minimize
         self.minimize_button.setFixedSize(12, 14)
+        self.minimize_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.minimize_button.setStyleSheet("""
             QPushButton {
                 background-color: black;
                 color: white;
                 border: none;
                 border-radius: 5px;
+                outline: none;
             }
             QPushButton:hover {
                 background-color: black;
@@ -384,12 +398,14 @@ class TimerApp(QWidget):
 
         self.close_button = QPushButton("x")  # Text for close button
         self.close_button.setFixedSize(12, 14)
+        self.close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.close_button.setStyleSheet("""
             QPushButton {
                 background-color: black;
                 color: white;
                 border: none;
                 border-radius: 5px;
+                outline: none;
             }
             QPushButton:hover {
                 background-color: #c82333;
@@ -455,12 +471,14 @@ class TimerApp(QWidget):
         button.setFixedSize(30, 30)
         button.setFont(QFont("Arial", 12))
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         button.setStyleSheet(f"""
             QPushButton {{
                 background-color: black;
                 color: white;
                 border: none;
                 border-radius: 8px;
+                outline: none;
             }}
             QPushButton:hover {{
                 background-color: {QColor('black').lighter(115).name()};
