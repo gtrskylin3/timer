@@ -37,13 +37,25 @@ class SettingsDialog(QDialog):
         self.layout.setContentsMargins(15, 10, 15, 15)
 
         # Top bar for close button
-        # top_bar_layout = QHBoxLayout()
-        # top_bar_layout.addStretch()
-        self.close_button = QPushButton("x")
-        self.close_button.setFixedSize(6, 7)
-        self.close_button.clicked.connect(self.reject)
+        top_bar_layout = QHBoxLayout()
+        top_bar_layout.addStretch()
+        self.close_button = QPushButton("x")  # Text for close button
+        self.close_button.setFixedSize(12, 14)
+        self.close_button.setStyleSheet("""
+            QPushButton {
+                background-color: black;
+                color: white;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #c82333;
+            }
+        """)
+        self.close_button.clicked.connect(self.close)  # Connect to window close method
+        top_bar_layout.addWidget(self.close_button)
         # top_bar_layout.addWidget(self.close_button)
-        # self.layout.addLayout(top_bar_layout)
+        self.layout.addLayout(top_bar_layout)
 
         # Title
         title = QLabel("Установить время")
@@ -108,19 +120,9 @@ class SettingsDialog(QDialog):
                 border: none;
                 border-radius: 5px;
                 font-size: 12px;
-                padding: 8px 12px;
             }
             QPushButton:hover {
                 background-color: #4a4a4a;
-            }
-        """)
-
-        self.close_button.setStyleSheet("""
-             QPushButton {
-                background-color: #dc3545; color: black; border: none; border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
             }
         """)
 
@@ -257,15 +259,6 @@ class StatisticsDialog(QDialog):
                 padding: 8px;
                 border: none;
                 font-weight: bold;
-            }
-        """)
-
-        self.close_button.setStyleSheet("""
-             QPushButton {
-                background-color: #dc3545; color: white; border: none; border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
             }
         """)
 
