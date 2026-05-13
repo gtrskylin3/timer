@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor
 from pathlib import Path
+from PyQt6.QtCore import QUrl
 from datetime import date
 import json
 
@@ -337,12 +338,18 @@ class TimerApp(QWidget):
             Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
+        self.time_to_save = 0
         self.total_seconds = 0
         self.is_paused = True
         self.is_stopwatch_mode = False
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_time)
+
+        from PyQt6.QtMultimedia import QSoundEffect
+
+        self.timer_sound = QSoundEffect()
+        self.timer_sound.setSource(QUrl.fromLocalFile(str(BASE_DIR / "sounds" / "ding.wav")))
+        self.timer_sound.setVolume(0.03)  # 0.0 to 1.0
 
         self.background_widget = QWidget(self)
         self.background_widget.setObjectName("backgroundWidget")
@@ -474,8 +481,8 @@ class TimerApp(QWidget):
             self.play_pause_button.setText("▶")
             self.is_paused = True
 
-    def save_stats(self, file_path=DATA_DIR):
-        if not self.total_seconds:
+    def save_stats(self, total_seconds: int, file_path=DATA_DIR):
+        if not total_seconds:
             return
 
         # 1. Читаем существующие данные
@@ -489,7 +496,7 @@ class TimerApp(QWidget):
 
         # 2. Обновляем статистику за сегодня
         today = str(date.today())  # Формат: 'YYYY-MM-DD'
-        stats[today] = stats.get(today, 0) + self.total_seconds
+        stats[today] = stats.get(today, 0) + total_seconds
 
         # 3. Сохраняем обратно
         with open(file_path, "w", encoding="utf-8") as f:
@@ -497,7 +504,7 @@ class TimerApp(QWidget):
 
     def stop_timer(self):
         self.timer.stop()
-        self.save_stats()
+        self.save_stats(self.total_seconds)
         self.total_seconds = 0
         self.is_stopwatch_mode = False  # Reset stopwatch mode
         self.update_display()
@@ -510,11 +517,26 @@ class TimerApp(QWidget):
         if dialog.exec():
             hours, minutes, seconds = dialog.get_time()
             self.total_seconds = hours * 3600 + minutes * 60 + seconds
+            self.time_to_save = self.total_seconds
             self.is_stopwatch_mode = False  # Reset stopwatch mode when new time is set
             self.update_display()
             if not self.is_paused:
                 self.toggle_play_pause()  # Stop timer and reset button if running
             self.is_paused = True
+
+    def flash_window(self):
+        """Мигание окна для привлечения внимания"""
+        self.original_opacity = self.windowOpacity()
+        self.flash_timer = QTimer(self)
+        self.flash_count = 0
+        def _flash():
+            self.setWindowOpacity(0.5 if self.flash_count % 2 == 0 else 1.0)
+            self.flash_count += 1
+            if self.flash_count >= 30:
+                self.flash_timer.stop()
+                self.setWindowOpacity(1.0)
+        self.flash_timer.timeout.connect(_flash)
+        self.flash_timer.start(150)
 
     def update_time(self):
         if self.is_stopwatch_mode:
@@ -525,6 +547,11 @@ class TimerApp(QWidget):
             self.update_display()
         else:  # Countdown finished
             self.timer.stop()
+            self.timer_sound.play()  # ← ЗВУК!
+            # Опционально: мигнуть окном
+            self.flash_window()
+            self.save_stats(self.time_to_save)
+            self.time_to_save = 0 
             if not self.is_paused:
                 self.toggle_play_pause()  # Reset button to play
             self.is_paused = True
